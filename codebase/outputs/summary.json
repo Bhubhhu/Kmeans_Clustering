@@ -1,0 +1,13 @@
+{
+  "countries": 182,
+  "pca_variance": [
+    35.21,
+    31.78
+  ],
+  "silhouette_final": 0.4195,
+  "davies_bouldin_final": 1.3064,
+  "below_pre_covid": 105,
+  "below_target": 81,
+  "backsliders": 5,
+  "backslider_avg_loss": -28.2
+}

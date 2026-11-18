@@ -1,5 +1,5 @@
-Project Title: Country Immunisation Coverage Profiles Through Unsupervised Clustering Analysis
+Project Title: Which countries are still behind on childhood vaccination after COVID-19? Clustering countries by recovery pattern
 Problem Statement ID: BMGF-GAVI-WHO-CLUST-2026
 Registration Numbers of All Group Members: RegNo1 (12104501), RegNo2 (12104502), RegNo3 (12104503)
-GitHub Repository Link: https://github.com/immunisation-analytics-group/country-immunisation-clustering-profiles
-Live Deployed Project Link: https://country-immunisation-clustering-profiles.streamlit.app/
+GitHub Repository Link: https://github.com/Bhubhhu/Kmeans_Clustering
+Live Deployed Project Link: (add the share.streamlit.io URL after deploying; main file path: codebase/app.py)

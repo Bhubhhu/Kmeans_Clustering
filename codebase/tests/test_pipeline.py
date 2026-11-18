@@ -1,32 +1,62 @@
-"""
-Automated Verification & Unit Tests for Country Immunisation Clustering Pipeline
-"""
+"""Checks on the real data and on the clustering result. Run: python -m pytest tests -q"""
 import os
+import sys
+
 import pandas as pd
+import pytest
 
-def test_outputs_exist():
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    out_dir = os.path.join(base_dir, "outputs")
-    expected_files = [
-        "preprocessing_missing_report.csv",
-        "preprocessed_encoded_dataset.csv",
-        "clustering_validation_metrics.csv",
-        "country_cluster_assignments.csv",
-        "pca_feature_loadings.csv",
-        "cluster_summary_profiles.csv",
-        "fig1_validation_metrics_comparison.png",
-        "fig2_pca_cluster_separation.png",
-        "fig3_cluster_feature_profiles.png"
-    ]
-    for fname in expected_files:
-        fpath = os.path.join(out_dir, fname)
-        assert os.path.exists(fpath), f"Missing output file: {fname}"
-        
-    df_assign = pd.read_csv(os.path.join(out_dir, "country_cluster_assignments.csv"))
-    assert len(df_assign) == 194, "Expected 194 WHO member state records"
-    assert df_assign.isnull().sum().sum() == 0, "Imputed dataset should contain zero NaN values"
-    assert set(df_assign["Cluster_ID"].unique()) == {0, 1, 2, 3}, "Optimal K=4 clusters expected"
-    print("ALL PIPELINE VERIFICATION TESTS PASSED SUCCESSFULLY!")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src import pipeline as p  # noqa: E402
 
-if __name__ == "__main__":
-    test_outputs_exist()
+RAW = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "raw")
+
+
+@pytest.fixture(scope="module")
+def result(tmp_path_factory):
+    out = tmp_path_factory.mktemp("out")
+    df, info = p.run(RAW, str(out))
+    return df, info, out
+
+
+def test_real_data_is_loaded_and_clean(result):
+    df, _, _ = result
+    assert len(df) > 150
+    assert df[p.FEATURES].notna().all().all()
+    assert (df["population"] >= p.MIN_POPULATION).all()
+    assert df[["dtp3_2019", "dtp3_2024"]].stack().between(0, 100).all()
+
+
+def test_known_real_world_facts(result):
+    df, _, _ = result
+    by = df.set_index("country")
+    assert by.loc["Sudan", "dtp3_net"] < -30          # Sudan's coverage collapsed after 2019
+    assert by.loc["Finland", "archetype"] == p.STABLE  # a high-coverage country stays stable
+
+
+def test_four_distinct_named_groups(result):
+    df, _, _ = result
+    assert set(df["archetype"]) == {p.STABLE, p.BACKSLIDE, p.LOW_UP, p.MID}
+    assert df["archetype"].notna().all() and df["suggested_focus"].notna().all()
+
+
+def test_group_names_match_their_numbers(result):
+    df, _, _ = result
+    g = df.groupby("archetype")
+    assert g["dtp3_net"].mean().idxmin() == p.BACKSLIDE
+    assert g["dtp3_2024"].mean().idxmax() == p.STABLE
+    assert g["dtp3_2019"].mean().idxmin() == p.LOW_UP
+
+
+def test_priority_score_and_outputs(result):
+    df, info, out = result
+    assert (df["priority_score"] >= 0).all()
+    assert info["countries"] == len(df)
+    for f in ["country_archetypes.csv", "timeseries.csv", "k_validation.csv", "method_comparison.csv",
+              "archetype_summary.csv", "pca_loadings.csv", "summary.json"]:
+        assert os.path.exists(os.path.join(str(out), f)), f
+
+
+def test_result_is_reproducible(result):
+    df, _, _ = result
+    df2, _ = p.run(RAW, str(result[2]) + "_again")
+    assert (df["cluster"] == df2["cluster"]).all()

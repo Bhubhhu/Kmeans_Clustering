@@ -1,97 +1,67 @@
-# Country Immunisation Coverage Profiles Through Unsupervised Clustering Analysis
+# Which countries are still behind on childhood vaccination after COVID-19?
 
-**Source Domain:** Bill & Melinda Gates Foundation | Open GAVI & WHO/UNICEF (WUENIC) Immunisation Indicators  
-**Problem Statement ID:** BMGF-GAVI-WHO-CLUST-2026  
+Unsupervised clustering of 182 countries by how their DTP3 and measles vaccination coverage behaved
+before, during and after the 2020-22 disruption, with a dashboard that suggests what kind of help each
+group needs.
 
----
+## The real-world problem
+Routine childhood vaccination fell almost everywhere in 2020-22. Some countries bounced back, some are
+still below their 2019 level, and a few collapsed. Donors and health ministries have limited money, so a
+single global response is wasteful. This project finds groups of countries with a similar recovery
+pattern so that each group can get a different kind of support (for example urgent catch-up
+campaigns vs. steady outreach).
 
-## 1. Project Overview
-This project develops a reproducible, end-to-end unsupervised machine learning workflow to stratify **194 WHO member states** into interpretable **Country Immunisation Coverage Profiles**. Using 11 core antigen and delivery continuity indicators (`BCG`, `DTP1`, `DTP3`, `POL3`, `MCV1`, `MCV2`, `HEPB3`, `HIB3`, `PCV3`, `ROTA`, and derived `DTP_Dropout_Rate`) alongside contextual regional and GAVI eligibility attributes, the pipeline:
-1. Documents variable relevance, performs income-group stratified median imputation for missing values, encodes categorical variables, and applies Z-score standardisation (`StandardScaler`).
-2. Benchmarks **K-Means (Euclidean $L_2$ distance)** against **K-Medians/K-Means (Manhattan $L_1$ distance)** across $K \in \{2, 3, 4, 5, 6, 7, 8\}$ using **Within-Cluster Sum of Squares (WCSS)**, **Silhouette Score**, **Davies-Bouldin Index (DBI)**, and multi-seed **Adjusted Rand Index (ARI)** stability.
-3. Projects high-dimensional profiles onto a 2D **Principal Component Analysis (PCA)** biplot (capturing **90.81%** total variance) and interprets the selected $K=4$ configuration responsibly without treating exploratory statistical clusters as rigid real-world labels.
+## Data (all real, public)
+Downloaded by `codebase/src/fetch_data.py` from the Our World in Data CSV endpoint and saved in `codebase/data/raw/`:
 
----
+| Series | Original source |
+|---|---|
+| DTP3 and measles (MCV1) coverage, 1980-2025 | WHO/UNICEF WUENIC estimates |
+| Under-5 mortality, GDP per person, doctors, skilled birth attendance, fertility, population | UN, World Bank, WHO |
 
-## 2. Directory Structure
+## Method
+1. **Features (what happened):** DTP3 and MCV1 in 2019, worst DTP3 drop in 2020-22, net change in DTP3 and MCV1 from 2019 to 2024, DTP3 trend 2010-19. Standardised (z-score).
+2. **Data quality:** countries under 100,000 people are excluded (their percentages rest on very few children).
+3. **Clustering:** K-Means (k-means++, 30 restarts), K = 4. Checked for K = 2-8 with WCSS, silhouette, Davies-Bouldin and seed stability (ARI), and against Ward hierarchical clustering and a Gaussian mixture.
+4. **Profiling (why / who):** context indicators are used only afterwards to describe each group.
+5. **Naming:** group names are generated from each group's own averages, not from its numeric id.
+6. **Peers:** for each country, the nearest look-alike countries that regained more coverage.
+7. **PCA** is used only to draw a 2D picture.
+
+## Result
+| Group | Countries | DTP3 2019 | DTP3 2024 |
+|---|---|---|---|
+| Stable high performers | 125 | 94% | 93% |
+| Mid-level, slow recovery | 33 | 79% | 72% |
+| Low but improving | 19 | 65% | 73% |
+| COVID backsliders (e.g. Sudan, Lebanon, Myanmar) | 5 | 88% | 60% |
+
+105 of 182 countries are still below their 2019 DTP3 level and 81 are below the 90% target.
+Final model: silhouette 0.42, Davies-Bouldin 1.31.
+
+## Limits
+National averages hide weak districts; WUENIC values are estimates; groups describe what happened, not
+why; the backslider group is small; K = 3 has a slightly higher silhouette but K = 4 separates two groups that need different help.
+
+## Run it
+```bash
+cd codebase
+pip install -r requirements.txt
+python src/pipeline.py        # rebuilds outputs/ from data/raw/
+python -m pytest tests -q     # 6 tests
+streamlit run app.py          # dashboard
+```
+To re-download the raw data: `python src/fetch_data.py`.
+
+## Structure
 ```text
-RegNo1_RegNo2_RegNo3/
-├── Project_Report.pdf                      # Comprehensive Technical Project Report (PDF)
-├── PPT_Presentation.pptx                   # Project Presentation Deck (PPTX)
-├── PPT_Presentation.pdf                    # Project Presentation Deck (PDF export)
-├── README.md                               # Project overview, setup, and execution guide
-├── requirements.txt                        # Python package dependencies
-├── PROJECT_LINKS.txt                       # GitHub repository and live deployment URLs
-└── codebase/                               # Complete executable source codebase
-    ├── app.py                              # Interactive Streamlit web dashboard
-    ├── requirements.txt                    # Environment dependencies
-    ├── data/
-    │   └── who_gavi_immunisation_coverage.csv  # Open WHO/GAVI country coverage dataset (194 countries)
-    ├── src/
-    │   └── clustering_pipeline.py          # Core preprocessing, clustering, PCA, and plotting engine
-    ├── tests/
-    │   └── test_pipeline.py                # Automated verification and integrity test suite
-    └── outputs/                            # Generated CSV tables and high-res PNG visualisations
-        ├── preprocessing_missing_report.csv
-        ├── preprocessed_encoded_dataset.csv
-        ├── clustering_validation_metrics.csv
-        ├── country_cluster_assignments.csv
-        ├── pca_feature_loadings.csv
-        ├── cluster_summary_profiles.csv
-        ├── fig1_validation_metrics_comparison.png
-        ├── fig2_pca_cluster_separation.png
-        └── fig3_cluster_feature_profiles.png
+codebase/
+  app.py                # Streamlit dashboard (map, country report, priority list, groups, method)
+  src/fetch_data.py     # downloads the real data
+  src/pipeline.py       # features, clustering, validation, naming, PCA, outputs
+  tests/test_pipeline.py
+  data/raw/             # downloaded CSVs
+  outputs/              # generated tables
+  static/world_110m.json  # bundled map outline (no CDN needed)
+  .streamlit/config.toml
 ```
-
----
-
-## 3. Prerequisites & Installation Steps
-
-### Prerequisites
-- **Python**: Version 3.9 or higher
-- **pip**: Standard Python package installer
-
-### Installation
-1. Unzip the submission archive (`RegNo1_RegNo2_RegNo3.zip`) and navigate into the project directory:
-   ```bash
-   cd codebase
-   ```
-2. (Optional) Create and activate a virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate   # On Windows: venv\Scripts\activate
-   ```
-3. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
----
-
-## 4. Execution Instructions
-
-### A. Run the Complete Clustering & PCA Pipeline
-To execute data preprocessing, distance metric comparisons ($L_2$ vs $L_1$), PCA projection, and regenerate all CSV tables and high-resolution figures in `codebase/outputs/`:
-```bash
-python3 src/clustering_pipeline.py
-```
-
-### B. Run Automated Verification Tests
-To verify that all output tables, cluster assignments, and visualisations pass integrity checks:
-```bash
-python3 tests/test_pipeline.py
-```
-
-### C. Launch the Interactive Streamlit Web Application
-To explore the clusters, PCA biplots, and country-level filtering interactively in your browser:
-```bash
-streamlit run app.py
-```
-
----
-
-## 5. External Dataset Sources & Setup
-The dataset (`codebase/data/who_gavi_immunisation_coverage.csv`) is pre-packaged for immediate offline reproducibility and is structured around official open global immunisation repositories:
-- **WHO / UNICEF Estimates of National Immunization Coverage (WUENIC)**: [https://immunizationdata.who.int/](https://immunizationdata.who.int/)
-- **GAVI, the Vaccine Alliance — Country Eligibility & Transition Data**: [https://www.gavi.org/programmes-impact/country-hub](https://www.gavi.org/programmes-impact/country-hub)
-- **Bill & Melinda Gates Foundation — Global Delivery & Immunisation Strategy**: [https://www.gatesfoundation.org/our-work/programs/global-development/immunization](https://www.gatesfoundation.org/our-work/programs/global-development/immunization)

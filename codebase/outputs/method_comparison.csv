@@ -1,0 +1,4 @@
+Method,Silhouette,Davies_Bouldin,ARI_vs_KMeans
+K-Means (final),0.4195,1.3064,1.0
+Ward hierarchical,0.3142,1.3271,0.4807
+Gaussian mixture,0.2415,1.6826,0.4067

@@ -1,5 +1,0 @@
-Cluster_ID,Cluster_Profile_Name,BCG,DTP1,DTP3,POL3,MCV1,MCV2,HEPB3,HIB3,PCV3,ROTA,DTP_Dropout_Rate,Country_Count
-0,Tier 1: High Universal & Sustained Coverage,95.97,96.97,94.47,95.0,95.52,91.03,95.01,94.91,91.72,87.26,2.57,86
-1,"Tier 2: Strong Core Coverage, Lagging Newer Vaccines",90.27,90.8,84.19,86.6,84.59,72.09,86.22,84.57,63.45,56.1,7.28,47
-2,Tier 3: Moderate Coverage with Multi-Dose Dropout Gaps,80.87,79.61,66.45,71.32,71.04,47.99,69.73,71.03,67.43,62.98,16.51,35
-3,Tier 4: Fragile & Zero-Dose Challenged Systems,62.07,61.98,42.15,50.86,45.56,23.39,49.8,49.62,39.98,39.87,32.72,26
