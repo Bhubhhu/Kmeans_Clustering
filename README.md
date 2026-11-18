@@ -33,7 +33,7 @@ Downloaded by `codebase/src/fetch_data.py` from the Our World in Data CSV endpoi
 |---|---|---|---|
 | Stable high performers | 125 | 94% | 93% |
 | Mid-level, slow recovery | 33 | 79% | 72% |
-| Low but improving | 19 | 65% | 73% |
+| Low but improving | 19 | 64% | 73% |
 | COVID backsliders (e.g. Sudan, Lebanon, Myanmar) | 5 | 88% | 60% |
 
 105 of 182 countries are still below their 2019 DTP3 level and 81 are below the 90% target.
