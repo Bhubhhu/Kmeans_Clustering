@@ -56,7 +56,7 @@ with tab_map:
     fig.update_geos(projection_type="natural earth", projection_rotation_lon=10, showframe=False,
                     bgcolor="rgba(0,0,0,0)", lataxis_range=[-58, 85], landcolor="#cccccc", showland=True)
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), legend_title_text="", height=520)
-    st.plotly_chart(fig, width="stretch", config={"topojsonURL": "/app/static/"})  # map outline is bundled, no CDN needed
+    st.plotly_chart(fig, width="stretch", config={"topojsonURL": "app/static/"})  # bundled map outline; relative so it also works under Streamlit Cloud's /~/+/ path
     st.caption("Countries under 100,000 people are left out because their percentages rest on very few children.")
 
 with tab_country:
